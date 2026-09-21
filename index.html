@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camí de Cavalls Pro_v 1.4.0</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS para Mapa Interactivo -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      user-select: none;
+    }
+    #mapContainer {
+      position: relative;
+      width: 100%;
+    }
+    #map {
+      height: calc(100vh - 280px);
+      min-height: 250px;
+      width: 100%;
+      border-radius: 12px;
+      z-index: 1;
+    }
+    .user-location-marker {
+      width: 16px;
+      height: 16px;
+      background-color: #3b82f6;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+    .medbasha-seal {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #94a3b8;
+      opacity: 0.7;
+    }
+    .medbasha-hexagon {
+      width: 14px;
+      height: 14px;
+      background: #475569;
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: bold;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 max-w-md mx-auto">
+
+  <!-- CABECERA PRINCIPAL -->
+  <header class="flex justify-between items-center bg-slate-800 p-3 rounded-xl shadow-lg border border-slate-700 mb-3">
+    <div class="flex items-center gap-2">
+      <button id="btnBack" class="hidden text-emerald-400 font-bold bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg text-sm transition">
+        ← Volver
+      </button>
+
+      <div>
+        <h1 class="text-base font-bold text-emerald-400 leading-tight">Camí de Cavalls Pro_v 1.4.0</h1>
+        <p id="subHeader" class="text-xs text-slate-400">Guía & Mapa de Menorca</p>
+      </div>
+    </div>
+    <button id="btnHelp" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full text-emerald-400 font-bold text-lg flex items-center justify-center shadow transition" title="Instrucciones">
+      ?
+    </button>
+  </header>
+
+  <!-- PANTALLA 1: MENÚ PRINCIPAL CON TARJETAS -->
+  <main id="screenHome" class="flex-1 space-y-3 overflow-y-auto pb-4">
+    <div class="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 p-3 rounded-xl text-xs flex justify-between items-center shadow">
+      <div>
+        <span class="font-bold text-amber-400">💨 Viento aconsejado hoy:</span>
+        <p class="text-slate-300">Tramontana (Norte) → Se recomienda elegir <span class="text-emerald-400 font-bold">Costa Sur</span></p>
+      </div>
+      <span class="text-2xl">🧭</span>
+    </div>
+
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">Selecciona una Sección</p>
+
+    <!-- GRID DE TARJETAS COLORIDAS -->
+    <div class="grid grid-cols-2 gap-3">
+      <!-- Tarjeta 1: Camí de Cavalls Completo / Etapas -->
+      <button onclick="openSection('etapas')" class="bg-gradient-to-br from-emerald-600 to-teal-800 p-4 rounded-xl shadow-lg border border-emerald-500/30 text-left flex flex-col justify-between h-32 active:scale-95 transition">
+        <div class="flex justify-between items-start">
+          <span class="text-3xl">🥾</span>
+          <span class="text-xs bg-emerald-900/80 text-emerald-200 px-2 py-0.5 rounded-full font-bold">20 Etapas</span>
+        </div>
+        <div>
+          <h2 class="font-bold text-white text-sm">Etapas GR 223</h2>
+          <p class="text-[11px] text-emerald-100/80">Recorrido por todo el litoral</p>
+        </div>
+      </button>
+
+      <!-- Tarjeta 2: Vistas al Mar & Fotos -->
+      <button onclick="openSection('fotos')" class="bg-gradient-to-br from-sky-600 to-blue-800 p-4 rounded-xl shadow-lg border border-sky-500/30 text-left flex flex-col justify-between h-32 active:scale-95 transition">
+        <div class="flex justify-between items-start">
+          <span class="text-3xl">📸</span>
+          <span class="text-xs bg-sky-900/80 text-sky-200 px-2 py-0.5 rounded-full font-bold">Miradores</span>
+        </div>
+        <div>
+          <h2 class="font-bold text-white text-sm">Vistas al Mar</h2>
+          <p class="text-[11px] text-sky-100/80">Mejores puntos fotográficos</p>
+        </div>
+      </button>
+
+      <!-- Tarjeta 3: Tramos Difíciles & Alertas -->
+      <button onclick="openSection('dificil')" class="bg-gradient-to-br from-rose-600 to-red-800 p-4 rounded-xl shadow-lg border border-rose-500/30 text-left flex flex-col justify-between h-32 active:scale-95 transition">
+        <div class="flex justify-between items-start">
+          <span class="text-3xl">⚠️</span>
+          <span class="text-xs bg-rose-900/80 text-rose-200 px-2 py-0.5 rounded-full font-bold">Precaución</span>
+        </div>
+        <div>
+          <h2 class="font-bold text-white text-sm">Tramos Difíciles</h2>
+          <p class="text-[11px] text-rose-100/80">Desniveles y rocas sueltas</p>
+        </div>
+      </button>
+
+      <!-- Tarjeta 4: Faros y Yacimientos -->
+      <button onclick="openSection('poi')" class="bg-gradient-to-br from-amber-600 to-orange-800 p-4 rounded-xl shadow-lg border border-amber-500/30 text-left flex flex-col justify-between h-32 active:scale-95 transition">
+        <div class="flex justify-between items-start">
+          <span class="text-3xl">🏛️</span>
+          <span class="text-xs bg-amber-900/80 text-amber-200 px-2 py-0.5 rounded-full font-bold">Cultura</span>
+        </div>
+        <div>
+          <h2 class="font-bold text-white text-sm">Faros y Talayots</h2>
+          <p class="text-[11px] text-amber-100/80">Faros, Taulas, Navetas, Cova des Coloms, etc.</p>
+        </div>
+      </button>
+
+      <!-- Tarjeta 5: Autobuses y Enlaces -->
+      <button onclick="openSection('bus')" class="bg-gradient-to-br from-indigo-600 to-purple-800 p-4 rounded-xl shadow-lg border border-indigo-500/30 text-left flex flex-col justify-between h-32 col-span-2 active:scale-95 transition">
+        <div class="flex justify-between items-start">
+          <span class="text-3xl">🚌</span>
+          <span class="text-xs bg-indigo-900/80 text-indigo-200 px-2 py-0.5 rounded-full font-bold">Conexiones</span>
+        </div>
+        <div>
+          <h2 class="font-bold text-white text-sm">Paradas de Autobús & Accesos en Coche</h2>
+          <p class="text-[11px] text-indigo-100/80">Macarella, Turqueta, Son Saura, La Vall, etc.</p>
+        </div>
+      </button>
+    </div>
+  </main>
+
+  <!-- PANTALLA 2: DETALLE / MAPA INTERACTIVO -->
+  <main id="screenDetail" class="flex-1 hidden flex-col space-y-2">
+    
+    <!-- CONTENEDOR DE FILTROS Y SELECTORES DE ACCESO -->
+    <div id="busControlsContainer" class="hidden flex-col gap-2 bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+      <div class="flex gap-2">
+        <button id="btnModeBus" onclick="setAccessMode('bus')" class="flex-1 py-1.5 px-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1 transition">
+          🚌 En Autobús
+        </button>
+        <button id="btnModeCar" onclick="setAccessMode('car')" class="flex-1 py-1.5 px-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
+          🚗 En Coche / Moto
+        </button>
+      </div>
+
+      <select id="accessPointSelect" onchange="onAccessPointChange(this.value)" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="macarella">Cala Macarella / Macarelleta</option>
+        <option value="turqueta">Cala en Turqueta</option>
+        <option value="sonsaura">Son Saura</option>
+        <option value="lavall">La Vall / Algaiarens</option>
+      </select>
+    </div>
+
+    <!-- SELECTOR DE ELEMENTOS CULTURALES (FAROS Y TALAYOTS) -->
+    <div id="culturalSelectorContainer" class="hidden">
+      <select id="culturalSelect" onchange="onCulturalSelectChange(this.value)" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-amber-500 focus:border-amber-500">
+        <option value="all">Ver todos los Faros y Yacimientos en el mapa</option>
+        <!-- FAROS -->
+        <optgroup label="💡 Faros de Menorca (7)">
+          <option value="faro_puntanati">Faro de Punta Nati (Ciutadella)</option>
+          <option value="faro_safarola">Faro de Sa Farola (Ciutadella)</option>
+          <option value="faro_artrutx">Faro de Cap d'Artrutx (Ciutadella)</option>
+          <option value="faro_cavalleria">Faro de Cavalleria (Es Mercadal)</option>
+          <option value="faro_favaritx">Faro de Favàritx (Maó)</option>
+          <option value="faro_santcarles">Faro de Punta Sant Carles (Es Castell)</option>
+          <option value="faro_illadaire">Faro de s'Illa de l'Aire (Sant Lluís)</option>
+        </optgroup>
+        <!-- POBLADOS Y YACIMIENTOS -->
+        <optgroup label="🏛️ Poblados y Monumentos UNESCO">
+          <option value="torre_galmes">Torre d'en Galmés (Alaior)</option>
+          <option value="son_catlar">Son Catlar (Ciutadella)</option>
+          <option value="talati_dalt">Talatí de Dalt (Maó)</option>
+          <option value="torralba_salort">Torralba d'en Salort (Alaior)</option>
+          <option value="trepuco">Trepucó (Maó)</option>
+          <option value="so_na_cacana">So na Caçana (Alaior)</option>
+          <option value="sant_agusti">Sant Agustí (Es Migjorn Gran)</option>
+          <option value="cornia_nou">Cornia Nou (Maó)</option>
+          <option value="torretta">Sa Torreta de Tramuntana (Maó)</option>
+          <option value="torrellafuda">Torrellafuda (Ciutadella)</option>
+          <option value="torrellisar">Torrellisar (Alaior)</option>
+          <option value="torretrencada">Torretrencada (Ciutadella)</option>
+          <option value="binissafullet">Binissafullet (Sant Lluís)</option>
+          <option value="montefi">Montefí (Ciutadella)</option>
+          <option value="biniaiet">Biniaiet Vell / Sant Vicenç d'Alcaidús</option>
+        </optgroup>
+        <!-- NAVETAS Y CUEVAS -->
+        <optgroup label="🗿 Navetas, Necrópolis y Cuevas">
+          <option value="naveta_tudons">Naveta des Tudons (Ciutadella)</option>
+          <option value="rafal_rubi">Navetas de Rafal Rubí (Alaior)</option>
+          <option value="biniac">Navetas de Biniac (Alaior)</option>
+          <option value="cales_coves">Necrópolis de Calescoves (Alaior)</option>
+          <option value="cala_morell_nec">Necrópolis de Cala Morell (Ciutadella)</option>
+          <option value="cova_coloms">Cova des Coloms (Es Migjorn Gran)</option>
+          <option value="cova_biniedris">Cova de Biniedrís (Alaior)</option>
+          <option value="cova_pas">Cova des Pas (Ferreries)</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- FILTRO RÁPIDO DE ETAPAS -->
+    <div id="stageSelectorContainer" class="hidden">
+      <select id="stageSelect" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500">
+        <option value="all">Ver todas las etapas en el mapa</option>
+        <option value="1">Etapa 1: Maó - Es Grau (10 km - Fácil)</option>
+        <option value="2">Etapa 2: Es Grau - Cap de Favàritx (8.6 km - Moderada)</option>
+        <option value="3">Etapa 3: Favàritx - Arenal d'en Castell (13.6 km - Difícil)</option>
+        <option value="12">Etapa 12: Cap d'Artrutx - Cala en Turqueta (13.3 km - Media)</option>
+      </select>
+    </div>
+
+    <!-- MAPA INTERACTIVO (LIMITADO EXCLUSIVAMENTE A MENORCA) -->
+    <div id="mapContainer">
+      <div id="map" class="shadow-inner"></div>
+      
+      <button id="btnLocateUser" onclick="locateUser()" class="absolute bottom-3 right-3 z-[1000] bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-600 p-2.5 rounded-full shadow-2xl flex items-center justify-center transition active:scale-90" title="Mi Posición Actual">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- PANAL / FICHA INFORMATIVA CON DESPLEGABLE -->
+    <div id="infoBox" class="bg-slate-800 border border-slate-700 p-3 rounded-xl text-xs space-y-2 overflow-y-auto max-h-48">
+      <p class="font-bold text-emerald-400 text-sm" id="infoTitle">Cargando datos del mapa...</p>
+      <div class="text-slate-300 space-y-1" id="infoDesc">
+        Toca cualquier marcador o elige un punto en el selector para desplegar su historia y detalles.
+      </div>
+      
+      <!-- ADVERTENCIA DE PARKING VERANO -->
+      <div id="parkingAlert" class="hidden bg-rose-900/40 border border-rose-500/50 p-2 rounded-lg text-rose-200 text-[11px] space-y-1">
+        <div class="font-bold flex items-center gap-1">
+          <span>⚠️ Advertencia de Aparcamiento en Verano</span>
+        </div>
+        <p id="parkingAlertText">Acceso muy saturado en julio/agosto. Plazas limitadas.</p>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN DIRECTA -->
+      <div id="actionButtons" class="hidden flex-wrap gap-2 pt-1">
+        <a id="btnNavGps" href="#" target="_blank" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1">
+          🧭 Ir desde mi posición con Google Maps
+        </a>
+        <a id="btnBuyBus" href="https://bus.e-mou-te.menorca.es" target="_blank" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1">
+          🎫 Comprar Billete Bus
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- PIE DE PÁGINA CON SELLO OFICIAL MEDBASHA -->
+  <footer class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
+    <div class="medbasha-seal">
+      <div class="medbasha-hexagon">MB</div>
+      <span>medbasha</span>
+    </div>
+    <span class="text-[10px] text-slate-500">Menorca Senderismo Pro</span>
+  </footer>
+
+  <!-- MODAL TUTORIAL / BIENVENIDA -->
+  <div id="tutorialModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🥾</span>
+        <div>
+          <h2 class="text-base font-bold text-emerald-400">¡Bienvenido a Menorca Senderismo!</h2>
+          <p class="text-xs text-slate-400">Tu guía del Camí de Cavalls</p>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+        <li>Explora los 7 Faros y la Menorca Talayótica patrimonio de la UNESCO.</li>
+        <li>Visita la majestuosa Cova des Coloms en Es Migjorn Gran.</li>
+        <li>Usa el GPS (📍) para centrarte automáticamente en el mapa de Menorca.</li>
+        <li>Funciona 100% offline para tus rutas sin cobertura.</li>
+      </ul>
+      <button id="btnUnderstand" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg">
+        ¡Entendido!
+      </button>
+    </div>
+  </div>
+
+  <!-- SCRIPT LÓGICA DE LA APP -->
+  <script>
+    let db;
+    let map;
+    let currentMarkers = [];
+    let currentPolyline = null;
+    let userMarker = null;
+    let userCircle = null;
+    let userCoords = null;
+    let activeAccessMode = 'bus';
+    let currentSection = 'etapas';
+
+    // LÍMITES ESTRICTOS DE MENORCA (PARA NO VER MALLORCA NI LA PENÍNSULA)
+    const menorcaBounds = L.latLngBounds(
+      L.latLng(39.75, 3.75), // Esquina Suroeste
+      L.latLng(40.15, 4.35)  // Esquina Noreste
+    );
+
+    // DATOS COMPLETOS CULTURALES (FAROS + TALAYOTS + CUEVAS)
+    const culturalData = {
+      // FAROS
+      faro_puntanati: { lat: 40.0501, lng: 3.8242, title: "💡 Faro de Punta Nati (Ciutadella)", desc: "Construido en 1913 para evitar naufragios en la accidentada costa de poniente. Famoso por sus puestas de sol y edificaciones de piedra seca.", type: "faro" },
+      faro_safarola: { lat: 40.0062, lng: 3.8271, title: "💡 Faro de Sa Farola (Ciutadella)", desc: "Guía la entrada al estrecho puerto de Ciutadella. Es uno de los faros más antiguos y con fácil acceso urbano.", type: "faro" },
+      faro_artrutx: { lat: 39.9238, lng: 3.8248, title: "💡 Faro de Cap d'Artrutx (Ciutadella)", desc: "Faro característico por sus franjas pintadas en azul y blanco en el extremo suroeste de la isla.", type: "faro" },
+      faro_cavalleria: { lat: 40.0881, lng: 4.0886, title: "💡 Faro de Cavalleria (Es Mercadal)", desc: "Ubicado en el punto más septentrional de Menorca sobre acantilados de más de 90 metros de altura.", type: "faro" },
+      faro_favaritx: { lat: 39.9972, lng: 4.2662, title: "💡 Faro de Favàritx (Maó)", desc: "Rodeado por un paisaje lunar de pizarra negra único en el Parque Natural de s'Albufera des Grau.", type: "faro" },
+      faro_santcarles: { lat: 39.8732, lng: 4.2982, title: "💡 Faro de Punta Sant Carles (Es Castell)", desc: "Situado junto a las ruinas del Castillo de San Felipe en la boca de entrada del puerto de Maó.", type: "faro" },
+      faro_illadaire: { lat: 39.8000, lng: 4.2928, title: "💡 Faro de s'Illa de l'Aire (Sant Lluís)", desc: "Situado en el islote inhabitado frente a Punta Prima, hábitat de la célebre lagartija negra.", type: "faro" },
+
+      // POBLADOS TALAYÓTICOS UNESCO
+      torre_galmes: { lat: 39.9016, lng: 4.1102, title: "🏛️ Torre d'en Galmés (Alaior)", desc: "El poblado talayótico más grande de las Islas Baleares. Conserva talayots, casas circulares y un complejo sistema de recogida de agua.", type: "talayot" },
+      son_catlar: { lat: 39.9213, lng: 3.8703, title: "🏛️ Son Catlar (Ciutadella)", desc: "Destaca por conservar intacta su muralla perimetral de piedra de más de 800 metros de longitud con garitas defensivas.", type: "talayot" },
+      talati_dalt: { lat: 39.8974, lng: 4.2128, title: "🏛️ Talatí de Dalt (Maó)", desc: "Famoso por su recinto de taula único donde una columna de piedra apoya oblicuamente sobre el capitel.", type: "talayot" },
+      torralba_salort: { lat: 39.9022, lng: 4.1481, title: "🏛️ Torralba d'en Salort (Alaior)", desc: "Alberga la taula talayótica más alta y mejor conservada de Menorca, junto a un gran talayot y salas hipóstilas.", type: "talayot" },
+      trepuco: { lat: 39.8745, lng: 4.2638, title: "🏛️ Trepucó (Maó)", desc: "Extenso poblado prehistórico muy cercano a Maó, con un gigantesco talayot central y recinto de taula monumental.", type: "talayot" },
+      so_na_cacana: { lat: 39.8821, lng: 4.1352, title: "🏛️ So na Caçana (Alaior)", desc: "Interpretado como un centro religioso o santuario vinculante entre varios poblados talayóticos vecinos.", type: "talayot" },
+      sant_agusti: { lat: 39.9288, lng: 4.0622, title: "🏛️ Sant Agustí (Es Migjorn Gran)", desc: "Conserva una de las casas talayóticas mejor estructuradas con vigas de madera y losas originales intactas.", type: "talayot" },
+      cornia_nou: { lat: 39.8822, lng: 4.2428, title: "🏛️ Cornia Nou (Maó)", desc: "Destaca por su talayot de gran masa de volumen cónico y sus estrechos corredores interiores.", type: "talayot" },
+      cova_coloms: { lat: 39.9328, lng: 4.0381, title: "🦇 Cova des Coloms (Es Migjorn Gran)", desc: "Conocida como la 'Catedral' por sus imponentes dimensiones (24m de altura y 300m de fondo) en el barranco de Binigaus.", type: "cueva" },
+
+      // NAVETAS Y CUEVAS
+      naveta_tudons: { lat: 40.0033, lng: 3.8919, title: "🗿 Naveta des Tudons (Ciutadella)", desc: "El monumento funerario de construcción ciclópea más antiguo e importante de toda Europa.", type: "naveta" },
+      cales_coves: { lat: 39.8661, lng: 4.1432, title: "💀 Necrópolis de Calescoves (Alaior)", desc: "Impresionante necrópolis con más de noventa cuevas artificiales excavadas directamente en los acantilados marinos.", type: "cueva" }
+    };
+
+    // DATOS ACCESO BUS/COCHE
+    const accessData = {
+      macarella: {
+        title: "Cala Macarella & Macarelleta",
+        bus: { line: "Línea 69", desc: "Bus directo a Macarella. Reserva previa web obligatoria.", walkTime: "📱 5 min a la arena.", lat: 39.9380, lng: 3.9372, alert: "🚫 Coche privado cortado en verano.", buyUrl: "https://bus.e-mou-te.menorca.es" },
+        car: { desc: "Parking Cala Galdana + Camí de Cavalls.", walkTime: "🥾 35-40 min a pie.", lat: 39.9381, lng: 3.9583, alert: "⚠️ Aparcar en Cala Galdana." }
+      },
+      turqueta: {
+        title: "Cala en Turqueta",
+        bus: { line: "Línea 68", desc: "Autobús oficial.", walkTime: "🚶 15 min a pie.", lat: 39.9325, lng: 3.9142, alert: "🚌 Muy recomendado.", buyUrl: "https://bus.e-mou-te.menorca.es" },
+        car: { desc: "Parking de Turqueta.", walkTime: "🚶 15 min a pie.", lat: 39.9325, lng: 3.9142, alert: "⚠️ Se llena antes de las 08:30 AM." }
+      },
+      sonsaura: {
+        title: "Son Saura",
+        bus: { line: "Línea 68", desc: "Bus a parkings del sur.", walkTime: "🚶 5 min a la arena.", lat: 39.9261, lng: 3.8941, alert: "🚌 Evita colas.", buyUrl: "https://bus.e-mou-te.menorca.es" },
+        car: { desc: "Parking Son Saura.", walkTime: "🚶 5 min a pie.", lat: 39.9261, lng: 3.8941, alert: "⚠️ Aforo completo pronto." }
+      },
+      lavall: {
+        title: "La Vall / Algaiarens",
+        bus: { line: "Línea 62", desc: "Bus playas del norte.", walkTime: "🚶 10 min a pie.", lat: 40.0461, lng: 3.9188, alert: "🚌 Ideal si sopla viento sur.", buyUrl: "https://bus.e-mou-te.menorca.es" },
+        car: { desc: "Parkings 1 y 2 de La Vall.", walkTime: "🚶 5 a 12 min.", lat: 40.0461, lng: 3.9188, alert: "⚠️ Dos parkings con control." }
+      }
+    };
+
+    // Inicializar IndexedDB
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("CamiDeCavallsDB_v1", 1);
+        request.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains("settings")) {
+            db.createObjectStore("settings", { keyPath: "key" });
+          }
+        };
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        request.onerror = (e) => reject(e);
+      });
+    }
+
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().then(persistent => {
+        console.log("Almacenamiento persistente:", persistent);
+      });
+    }
+
+    async function checkTutorial() {
+      if (!db) await initDB();
+      const transaction = db.transaction(["settings"], "readonly");
+      const store = transaction.objectStore("settings");
+      const req = store.get("tutorialSeen");
+      req.onsuccess = () => {
+        if (!req.result) {
+          document.getElementById('tutorialModal').classList.remove('hidden');
+        }
+      };
+    }
+
+    document.getElementById('btnUnderstand').addEventListener('click', () => {
+      const transaction = db.transaction(["settings"], "readwrite");
+      const store = transaction.objectStore("settings");
+      store.put({ key: "tutorialSeen", value: true });
+      document.getElementById('tutorialModal').classList.add('hidden');
+    });
+
+    document.getElementById('btnHelp').addEventListener('click', () => {
+      document.getElementById('tutorialModal').classList.remove('hidden');
+    });
+
+    function openSection(type) {
+      currentSection = type;
+      document.getElementById('screenHome').classList.add('hidden');
+      document.getElementById('screenDetail').classList.remove('hidden');
+      document.getElementById('screenDetail').classList.add('flex');
+      document.getElementById('btnBack').classList.remove('hidden');
+
+      const stageContainer = document.getElementById('stageSelectorContainer');
+      const busControls = document.getElementById('busControlsContainer');
+      const culturalContainer = document.getElementById('culturalSelectorContainer');
+      const subHeader = document.getElementById('subHeader');
+
+      stageContainer.classList.add('hidden');
+      busControls.classList.add('hidden');
+      busControls.classList.remove('flex');
+      culturalContainer.classList.add('hidden');
+
+      if (type === 'etapas') {
+        subHeader.textContent = 'Etapas del Camí de Cavalls';
+        stageContainer.classList.remove('hidden');
+      } else if (type === 'bus') {
+        subHeader.textContent = 'Paradas de Bus & Accesos en Coche';
+        busControls.classList.remove('hidden');
+        busControls.classList.add('flex');
+      } else if (type === 'poi') {
+        subHeader.textContent = 'Faros, Talayots y Cuevas de Menorca';
+        culturalContainer.classList.remove('hidden');
+      } else {
+        if (type === 'fotos') subHeader.textContent = 'Miradores & Fotos al Mar';
+        if (type === 'dificil') subHeader.textContent = 'Tramos Difíciles & Alertas';
+      }
+
+      initMap(type);
+    }
+
+    document.getElementById('btnBack').addEventListener('click', () => {
+      document.getElementById('screenDetail').classList.add('hidden');
+      document.getElementById('screenDetail').classList.remove('flex');
+      document.getElementById('screenHome').classList.remove('hidden');
+      document.getElementById('btnBack').classList.add('hidden');
+      document.getElementById('subHeader').textContent = 'Guía & Mapa de Menorca';
+    });
+
+    function setAccessMode(mode) {
+      activeAccessMode = mode;
+      const btnBus = document.getElementById('btnModeBus');
+      const btnCar = document.getElementById('btnModeCar');
+
+      if (mode === 'bus') {
+        btnBus.className = "flex-1 py-1.5 px-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1 transition";
+        btnCar.className = "flex-1 py-1.5 px-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition";
+      } else {
+        btnCar.className = "flex-1 py-1.5 px-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1 transition";
+        btnBus.className = "flex-1 py-1.5 px-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition";
+      }
+
+      onAccessPointChange(document.getElementById('accessPointSelect').value);
+    }
+
+    function onAccessPointChange(key) {
+      const data = accessData[key];
+      if (!data) return;
+
+      const details = activeAccessMode === 'bus' ? data.bus : data.car;
+
+      document.getElementById('infoTitle').textContent = `${data.title} (${activeAccessMode === 'bus' ? 'En Autobús' : 'En Coche'})`;
+      document.getElementById('infoDesc').innerHTML = `
+        <p>${details.desc}</p>
+        <p class="font-semibold text-emerald-300 mt-1">${details.walkTime}</p>
+      `;
+
+      const alertBox = document.getElementById('parkingAlert');
+      const alertText = document.getElementById('parkingAlertText');
+      if (details.alert) {
+        alertText.textContent = details.alert;
+        alertBox.classList.remove('hidden');
+      } else {
+        alertBox.classList.add('hidden');
+      }
+
+      const actionBox = document.getElementById('actionButtons');
+      const btnGps = document.getElementById('btnNavGps');
+      const btnBuy = document.getElementById('btnBuyBus');
+
+      actionBox.classList.remove('hidden');
+      actionBox.classList.add('flex');
+      
+      if (userCoords) {
+        btnGps.href = `https://www.google.com/maps/dir/?api=1&origin=${userCoords.lat},${userCoords.lng}&destination=${details.lat},${details.lng}`;
+      } else {
+        btnGps.href = `https://www.google.com/maps/dir/?api=1&destination=${details.lat},${details.lng}`;
+      }
+
+      if (activeAccessMode === 'bus' && details.buyUrl) {
+        btnBuy.classList.remove('hidden');
+        btnBuy.href = details.buyUrl;
+      } else {
+        btnBuy.classList.add('hidden');
+      }
+
+      if (map) {
+        map.setView([details.lat, details.lng], 14);
+        currentMarkers.forEach(m => map.removeLayer(m));
+        currentMarkers = [];
+
+        const marker = L.marker([details.lat, details.lng]).addTo(map)
+          .bindPopup(`<b>${data.title}</b><br>${details.desc}`)
+          .openPopup();
+        currentMarkers.push(marker);
+      }
+    }
+
+    // Al seleccionar en el desplegable cultural (Faros / Talayots)
+    function onCulturalSelectChange(key) {
+      if (key === 'all') {
+        initMap('poi');
+        return;
+      }
+
+      const item = culturalData[key];
+      if (!item) return;
+
+      document.getElementById('infoTitle').textContent = item.title;
+      document.getElementById('infoDesc').innerHTML = `<p class="leading-relaxed">${item.desc}</p>`;
+
+      const actionBox = document.getElementById('actionButtons');
+      const btnGps = document.getElementById('btnNavGps');
+      document.getElementById('btnBuyBus').classList.add('hidden');
+
+      actionBox.classList.remove('hidden');
+      actionBox.classList.add('flex');
+
+      if (userCoords) {
+        btnGps.href = `https://www.google.com/maps/dir/?api=1&origin=${userCoords.lat},${userCoords.lng}&destination=${item.lat},${item.lng}`;
+      } else {
+        btnGps.href = `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`;
+      }
+
+      if (map) {
+        map.setView([item.lat, item.lng], 15);
+        currentMarkers.forEach(m => map.removeLayer(m));
+        currentMarkers = [];
+
+        const marker = L.marker([item.lat, item.lng]).addTo(map)
+          .bindPopup(`<b>${item.title}</b><br>${item.desc}`)
+          .openPopup();
+        currentMarkers.push(marker);
+      }
+    }
+
+    // Inicializar Mapa con Límites Estrictos de Menorca
+    function initMap(type) {
+      if (!map) {
+        map = L.map('map', {
+          maxBounds: menorcaBounds,
+          maxBoundsViscosity: 1.0, // Impide arrastrar el mapa fuera de Menorca
+          minZoom: 10,
+          maxZoom: 18
+        }).setView([39.98, 4.05], 11);
+
+        const userLang = navigator.language || navigator.userLanguage || 'es';
+        const isSpanishOrLocal = userLang.startsWith('es') || userLang.startsWith('ca');
+
+        const tileUrl = isSpanishOrLocal 
+          ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+        L.tileLayer(tileUrl, {
+          maxZoom: 18,
+          attribution: '© OpenStreetMap / CARTO'
+        }).addTo(map);
+
+        locateUser(false);
+      } else {
+        map.fitBounds(menorcaBounds);
+      }
+
+      currentMarkers.forEach(m => map.removeLayer(m));
+      currentMarkers = [];
+      if (currentPolyline) map.removeLayer(currentPolyline);
+
+      document.getElementById('actionButtons').classList.add('hidden');
+      document.getElementById('parkingAlert').classList.add('hidden');
+
+      if (type === 'bus') {
+        onAccessPointChange(document.getElementById('accessPointSelect').value);
+        return;
+      }
+
+      if (type === 'poi') {
+        Object.keys(culturalData).forEach(k => {
+          const p = culturalData[k];
+          const marker = L.marker([p.lat, p.lng]).addTo(map)
+            .bindPopup(`<b>${p.title}</b><br>${p.desc}`);
+          
+          marker.on('click', () => {
+            document.getElementById('culturalSelect').value = k;
+            onCulturalSelectChange(k);
+          });
+          currentMarkers.push(marker);
+        });
+        return;
+      }
+
+      if (type === 'etapas') {
+        const stageCoords = [
+          [39.89, 4.26], [39.98, 4.26], [39.99, 4.20], [40.08, 4.08], [39.93, 3.82], [39.89, 4.26]
+        ];
+        currentPolyline = L.polyline(stageCoords, { color: '#10b981', weight: 4, opacity: 0.8 }).addTo(map);
+        map.fitBounds(currentPolyline.getBounds());
+      }
+
+      setTimeout(() => map.invalidateSize(), 200);
+    }
+
+    // GEOLOCALIZACIÓN GPS
+    function locateUser(zoomToUser = true) {
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+
+          userCoords = { lat, lng };
+
+          if (userMarker) map.removeLayer(userMarker);
+          if (userCircle) map.removeLayer(userCircle);
+
+          const userIcon = L.divIcon({
+            className: 'user-location-marker',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+
+          userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map)
+            .bindPopup("📍 <b>Tu posición actual</b>");
+
+          userCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: '#3b82f6',
+            fillColor: '#93c5fd',
+            fillOpacity: 0.25,
+            weight: 1
+          }).addTo(map);
+
+          if (zoomToUser) {
+            map.setView([lat, lng], 14);
+            userMarker.openPopup();
+          }
+        },
+        (error) => console.warn("GPS no disponible:", error.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado', reg))
+          .catch(err => console.log('Error SW', err));
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initDB().then(() => checkTutorial());
+    });
+  </script>
+</body>
+</html>
